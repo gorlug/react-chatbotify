@@ -1,6 +1,6 @@
-import { MouseEvent } from "react";
+import {MouseEvent} from "react";
 
-import { useBotOptions } from "../../context/BotOptionsContext";
+import {useBotOptions} from "../../context/BotOptionsContext";
 
 import "./ChatBotHeader.css";
 

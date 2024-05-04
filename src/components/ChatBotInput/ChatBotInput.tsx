@@ -1,10 +1,9 @@
-
-import { useState, ChangeEvent, FormEvent, KeyboardEvent, RefObject, useEffect, MouseEvent } from "react";
+import {ChangeEvent, FormEvent, KeyboardEvent, MouseEvent, RefObject, useEffect, useState} from "react";
 
 import SendButton from "./SendButton/SendButton";
 import VoiceButton from "./VoiceButton/VoiceButton";
-import { isDesktop } from "../../services/Utils";
-import { useBotOptions } from "../../context/BotOptionsContext";
+import {isDesktop} from "../../services/Utils";
+import {useBotOptions} from "../../context/BotOptionsContext";
 
 import "./ChatBotInput.css";
 
@@ -177,7 +176,7 @@ const ChatBotInput = ({
 				onBlur={handleBlur}
 			/>
 			<div className="rcb-chat-input-button-container">
-				{!botOptions.voice?.disabled && isDesktop &&
+				{!botOptions.voice?.disabled && (isDesktop || botOptions.voice?.mobileEnabled) &&
 					<VoiceButton inputRef={inputRef} textAreaDisabled={textAreaDisabled}
 						voiceToggledOn={voiceToggledOn} handleToggleVoice={handleToggleVoice}
 						triggerSendVoiceInput={triggerSendVoiceInput} setInputLength={setInputLength}

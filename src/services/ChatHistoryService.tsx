@@ -1,10 +1,10 @@
-import { createElement, isValidElement, Dispatch, SetStateAction, ReactNode, CSSProperties } from "react";
+import {createElement, CSSProperties, isValidElement, ReactNode} from "react";
 import ReactDOMServer from "react-dom/server";
 
 import ChatHistoryLineBreak from "../components/ChatHistoryLineBreak/ChatHistoryLineBreak";
 import LoadingSpinner from "../components/LoadingSpinner/LoadingSpinner";
-import { Message } from "../types/Message";
-import { Options } from "../types/Options";
+import {Message} from "../types/Message";
+import {ChatHistoryLoader, Options} from "../types/Options";
 
 // variables used to track history, updated when botOptions.chatHistory value changes
 let historyLoaded = false;
@@ -103,47 +103,55 @@ const parseMessageToString = (message: Message) => {
  * @param setIsLoadingChatHistory setter for updating load progress
  * @param setTextAreaDisabled setter for enabling/disabling user text area
  */
-const loadChatHistory = (botOptions: Options, chatHistory: string, setMessages: Dispatch<SetStateAction<Message[]>>, 
-	setIsLoadingChatHistory: Dispatch<SetStateAction<boolean>>,
-	setTextAreaDisabled: Dispatch<SetStateAction<boolean>>) => {
+const loadChatHistory = async (botOptions: Options, loader: ChatHistoryLoader,
+	setMessages: React.Dispatch<React.SetStateAction<Message[]>>,
+	setIsLoadingChatHistory: React.Dispatch<React.SetStateAction<boolean>>,
+	setTextAreaDisabled: React.Dispatch<React.SetStateAction<boolean>>,
+	createChatHistoryButton: (loader: ChatHistoryLoader) => {
+		sender: string;
+		content: JSX.Element
+	}) => {
 
 	historyLoaded = true;
-	if (chatHistory != null) {
+
+	if (await loader.hasMoreHistory()) {
 		try {
 			setMessages((prevMessages) => {
 				const loaderMessage = {
 					content: <LoadingSpinner/>,
 					sender: "system"
 				}
-				prevMessages.shift();
-				return [loaderMessage, ...prevMessages];
+				return [loaderMessage, ...removeSystemMessages(prevMessages)];
 			});
-
-			const parsedMessages = JSON.parse(chatHistory).map((message: Message) => {
-				if (message.type === "object") {
-					const element = renderHTML(message.content as string, botOptions);
-					return { ...message, content: element };
-				}
-				return message;
-			});
+			const historyMessages = await loader.loadHistory();
+			const loadMoreHistoryResult = await loader.hasMoreHistory();
 
 			setTimeout(() => {
 				setMessages((prevMessages) => {
-					prevMessages.shift();
-					const lineBreakMessage = {
+					const lineBreakMessage = loader.historyWasLoadedOnce() ? [] : [{
 						content: <ChatHistoryLineBreak/>,
 						sender: "system"
-					}
-					return [...parsedMessages, lineBreakMessage, ...prevMessages];
+					}];
+					const loadMoreHistoryButton = loadMoreHistoryResult ? [createChatHistoryButton(loader)] : [];
+					return [...loadMoreHistoryButton, ...historyMessages, ...lineBreakMessage,
+						...removeSystemMessages(prevMessages)]
 				});
-				setIsLoadingChatHistory(false);
 				setTextAreaDisabled(botOptions.chatInput?.disabled || false);
 			}, 500)
 		} catch {
 			// remove chat history on error (to address corrupted storage values)
 			localStorage.removeItem(botOptions.chatHistory?.storageKey as string);
 		}
+	} else {
+		setIsLoadingChatHistory(false)
+		setMessages(prevMessages => {
+			return prevMessages.slice(1);
+		})
 	}
+}
+
+function removeSystemMessages(messages: Message[]): Message[] {
+	return messages.filter(message => message.sender !== "system");
 }
 
 /**
@@ -193,6 +201,35 @@ const renderHTML = (html: string, botOptions: Options): ReactNode[] => {
   
 	return renderNodes;
 };
+
+
+export class LocalStorageChatHistoryLoader implements ChatHistoryLoader {
+	chatHistory: string | null;
+	historyLoaded = false
+
+	constructor(private storageKey: string, private botOptions: Options) {
+		this.chatHistory = localStorage.getItem(this.storageKey);
+	}
+
+	async loadHistory(): Promise<Message[]> {
+		if (this.chatHistory == null) {
+			return []
+		}
+		return JSON.parse(this.chatHistory).map((message: Message) => {
+			if (message.type === "object") {
+				const element = renderHTML(message.content as string, this.botOptions);
+				return {...message, content: element};
+			}
+			return message;
+		});
+	}
+	async hasMoreHistory(): Promise<boolean> {
+		return this.chatHistory != null && !this.historyLoaded;
+	}
+	historyWasLoadedOnce(): boolean {
+		return this.historyLoaded;
+	}
+}
 
 /**
  * Add styles (that were lost when saving to history) to options container/checkbox container.

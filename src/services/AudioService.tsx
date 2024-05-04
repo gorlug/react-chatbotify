@@ -1,5 +1,5 @@
-import { Message } from "../types/Message";
-import { Options } from "../types/Options";
+import {Message} from "../types/Message";
+import {Options} from "../types/Options";
 
 /**
  * Handles reading out of messages sent by the bot.
@@ -27,6 +27,7 @@ const speak = (message: string, language: string, voiceNames: string[], rate: nu
 				return;
 			}
 		});
+		console.log('voice identified', voiceIdentified)
 		if (voiceIdentified) {
 			break;
 		}
@@ -51,6 +52,7 @@ export const processAudio = (botOptions: Options, voiceToggledOn: boolean, messa
 		return;
 	}
 
+	console.log('speak')
 	speak(message.content, botOptions.audio?.language as string, botOptions.audio?.voiceNames as string[],
 		botOptions.audio?.rate as number, botOptions.audio?.volume as number);
 }

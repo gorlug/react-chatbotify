@@ -1,6 +1,6 @@
-import { useState, MouseEvent } from "react";
+import {MouseEvent, useState} from "react";
 
-import { useBotOptions } from "../../context/BotOptionsContext";
+import {useBotOptions} from "../../context/BotOptionsContext";
 
 import "./ChatHistoryButton.css";
 
@@ -11,11 +11,9 @@ import "./ChatHistoryButton.css";
  * @param showChatHistory entry point for showing of chat history
  */
 const ChatHistoryButton = ({
-	chatHistory,
 	showChatHistory
 }: {
-	chatHistory: string;
-	showChatHistory: (chatHistory: string) => void;
+	showChatHistory: () => void;
 }) => {
 
 	// handles options for bot
@@ -53,7 +51,7 @@ const ChatHistoryButton = ({
 				style={isHovered ? chatHistoryButtonHoveredStyle : botOptions.chatHistoryButtonStyle}
 				onMouseDown={(event: MouseEvent) => {
 					event.preventDefault();
-					showChatHistory(chatHistory);
+					showChatHistory();
 				}}
 				className="rcb-view-history-button"
 			>

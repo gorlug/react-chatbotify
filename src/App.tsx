@@ -1,5 +1,7 @@
 import ChatBot from "./components/ChatBot";
-import { Params } from "./types/Params";
+import {Params} from "./types/Params";
+import {ChatHistoryLoader, MessageHandler} from "./types/Options";
+import {Message} from "./types/Message";
 
 function App() {
 
@@ -37,7 +39,7 @@ function App() {
 		},
 		ask_favourite_pet: {
 			message: "Interesting! Pick any 2 pets below.",
-			checkboxes: {items: ["Dog", "Cat", "Rabbit", "Hamster"], min:2, max: 2},
+			checkboxes: {items: ["Dog", "Cat", "Rabbit", "Hamster"], min: 2, max: 2},
 			function: (params: Params) => alert(`You picked: ${JSON.stringify(params.userInput)}!`),
 			path: "ask_height",
 		},
@@ -60,7 +62,7 @@ function App() {
 			},
 			render: (
 				<div style={{display: "flex", alignItems: "center", justifyContent: "center", marginTop: 10}}>
-					<button 
+					<button
 						className="secret-fav-color"
 						onClick={() => alert("black")}>
 						Click me!
@@ -100,6 +102,7 @@ function App() {
 		},
 	}
 
+	const mockMessageHandler = new MockMessageHandler();
 	return (
 		<div className="App">
 			<header className="App-header">
@@ -107,11 +110,16 @@ function App() {
 					<ChatBot
 						flow={flow}
 						options={{
-							audio: {disabled: false},
+							messages: {messageHandler: mockMessageHandler},
+							audio: {disabled: false, language: 'de-DE'},
 							chatInput: {botDelay: 1000},
 							userBubble: {showAvatar: true},
 							botBubble: {showAvatar: true},
-							voice: {disabled: false}
+							voice: {disabled: false},
+							theme: {embedded: true},
+							chatHistory: {
+								historyLoader: new HistoryLoader()
+							},
 						}}
 					></ChatBot>
 				</div>
@@ -121,3 +129,88 @@ function App() {
 }
 
 export default App;
+
+class HistoryLoader implements ChatHistoryLoader {
+	numberOfLoads = 0
+
+	loadOnStart = true
+	historyWasLoadedOnce(): boolean {
+		return this.numberOfLoads > 1;
+	}
+
+	async loadHistory(): Promise<Message[]> {
+		this.numberOfLoads++;
+		if (this.numberOfLoads === 1) {
+			return [
+				{
+					content: "This is chat history",
+					sender: "bot"
+				},
+				{
+					content: "From the user",
+					sender: "user"
+				},
+				{
+					content: "This is chat history",
+					sender: "bot"
+				},
+				{
+					content: "From the user",
+					sender: "user"
+				},
+				{
+					content: "This is chat history",
+					sender: "bot"
+				},
+				{
+					content: "From the user",
+					sender: "user"
+				},
+				{
+					content: "This is chat history",
+					sender: "bot"
+				},
+				{
+					content: "From the user",
+					sender: "user"
+				},
+			]
+		}
+		return [
+			{
+				content: "This is older chat history",
+				sender: "bot"
+			},
+		]
+	}
+	async hasMoreHistory(): Promise<boolean> {
+		return this.numberOfLoads < 2;
+	}
+
+}
+
+class MockMessageHandler implements MessageHandler {
+	callback?: (messages: Message[], options?: string[]) => void
+	sendMessage(): void {
+		if (!this.callback) {
+			return;
+		}
+		const callback = this.callback;
+		setTimeout(() => {
+			callback([
+				{
+					content: "Das ist eine Antwort",
+					sender: "bot"
+				},
+				{
+					content: "Und noch eine",
+					sender: "bot"
+				}
+			], ['option1', 'option2'])
+		}, 500)
+	}
+	onMessagesReceived(callback: (messages: Message[], options?: string[]) => void): void {
+		this.callback = callback;
+	}
+
+}

@@ -1,8 +1,8 @@
-import { RefObject, Dispatch, SetStateAction, useEffect, CSSProperties, MouseEvent } from "react";
+import {CSSProperties, Dispatch, MouseEvent, RefObject, SetStateAction, useEffect} from "react";
 
-import { useBotOptions } from "../../context/BotOptionsContext";
-import { useMessages } from "../../context/MessagesContext";
-import { Message } from "../../types/Message";
+import {useBotOptions} from "../../context/BotOptionsContext";
+import {useMessages} from "../../context/MessagesContext";
+import {Message} from "../../types/Message";
 
 import "./ChatBotBody.css";
 

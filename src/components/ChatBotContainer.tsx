@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, MouseEvent } from "react";
+import {MouseEvent, useEffect, useRef, useState} from "react";
 
 import ChatBotHeader from "./ChatBotHeader/ChatBotHeader";
 import ChatBotBody from "./ChatBotBody/ChatBotBody";
@@ -7,19 +7,26 @@ import ChatBotFooter from "./ChatBotFooter/ChatBotFooter";
 import ChatBotButton from "./ChatBotButton/ChatBotButton";
 import ChatHistoryButton from "./ChatHistoryButton/ChatHistoryButton";
 import ChatBotTooltip from "./ChatBotTooltip/ChatBotTooltip";
-import { preProcessBlock, postProcessBlock } from "../services/BlockService/BlockService";
-import { loadChatHistory, saveChatHistory, setHistoryStorageValues } from "../services/ChatHistoryService";
-import { processAudio } from "../services/AudioService";
-import { syncVoiceWithChatInput } from "../services/VoiceService";
-import { isDesktop } from "../services/Utils";
-import { useBotOptions } from "../context/BotOptionsContext";
-import { useMessages } from "../context/MessagesContext";
-import { usePaths } from "../context/PathsContext";
-import { Flow } from "../types/Flow";
-import { Message } from "../types/Message";
-import { Params } from "../types/Params";
+import {postProcessBlock, preProcessBlock} from "../services/BlockService/BlockService";
+import {
+	loadChatHistory,
+	LocalStorageChatHistoryLoader,
+	saveChatHistory,
+	setHistoryStorageValues
+} from "../services/ChatHistoryService";
+import {processAudio} from "../services/AudioService";
+import {syncVoiceWithChatInput} from "../services/VoiceService";
+import {isDesktop} from "../services/Utils";
+import {useBotOptions} from "../context/BotOptionsContext";
+import {useMessages} from "../context/MessagesContext";
+import {usePaths} from "../context/PathsContext";
+import {Flow} from "../types/Flow";
+import {Message} from "../types/Message";
+import {Params} from "../types/Params";
 
 import "./ChatBotContainer.css";
+import {ChatHistoryLoader, MessageHandler} from "../types/Options";
+import UserOptions from "./UserOptions/UserOptions";
 
 /**
  * Integrates and contains the various components that makeup the chatbot.
@@ -65,6 +72,7 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 
 	// tracks if audio is toggled on
 	const [audioToggledOn, setAudioToggledOn] = useState<boolean>(false);
+	const audioToggledOnRef = useRef<boolean>(false)
 
 	// tracks if voice is toggled on
 	const [voiceToggledOn, setVoiceToggledOn] = useState<boolean>(false);
@@ -96,6 +104,50 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 	// tracks previous window scroll position to go back to on mobile
 	const scrollPositionRef = useRef<number>(0);
 
+	function createChatHistoryButton(loader: ChatHistoryLoader) {
+		return {
+			content: <ChatHistoryButton showChatHistory={() => showChatHistory(loader)}/>,
+			sender: "system"
+		};
+	}
+
+
+	function addHistoryButton() {
+		let loader = botOptions.chatHistory?.historyLoader
+		if (loader === undefined) {
+			loader = new LocalStorageChatHistoryLoader(botOptions.chatHistory?.storageKey as string, botOptions);
+		}
+		const messageContent = createChatHistoryButton( loader);
+		setMessages([messageContent]);
+		if (loader.loadOnStart) {
+			showChatHistory(loader);
+		}
+	}
+
+	function connectToMessageHandler(messageHandler: MessageHandler) {
+		messageHandler.onMessagesReceived((messages: Message[], options?: string[]	) => {
+			setIsBotTyping(false);
+
+			const optionsElements: Message[] = options && options.length > 0 ?
+				[{content:
+					<UserOptions options={options} path={''} handleActionInput={handleActionInput}
+						doNotDisable={true}/>,
+				sender: 'bot'}] : []
+
+
+			setMessages((prevMessages) => {
+				return [...prevMessages, ...messages, ...optionsElements];
+			})
+
+			updateTextArea();
+			syncVoiceWithChatInput(keepVoiceOnRef.current, botOptions);
+
+			for (const message of messages) {
+				processAudio(botOptions, audioToggledOnRef.current, message);
+			}
+		})
+	}
+
 	// adds listeners and render chat history button if enabled
 	useEffect(() => {
 		window.addEventListener("click", handleFirstInteraction);
@@ -110,14 +162,10 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 		if (botOptions.chatHistory?.disabled) {
 			localStorage.removeItem(botOptions.chatHistory?.storageKey as string);
 		} else {
-			const chatHistory = localStorage.getItem(botOptions.chatHistory?.storageKey as string);
-			if (chatHistory != null) {
-				const messageContent = {
-					content: <ChatHistoryButton chatHistory={chatHistory} showChatHistory={showChatHistory} />,
-					sender: "system"
-				};
-				setMessages([messageContent]);
-			}
+			addHistoryButton();
+		}
+		if (botOptions.messages?.messageHandler) {
+			connectToMessageHandler(botOptions.messages.messageHandler);
 		}
 
 		return () => {
@@ -444,12 +492,13 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 	/**
 	 * Loads and shows chat history in the chat window.
 	 * 
-	 * @param chatHistory chat history content to show
+	 * @param loader chat history content to show
 	 */
-	const showChatHistory = (chatHistory: string) => {
+	const showChatHistory = (loader: ChatHistoryLoader) => {
 		setIsLoadingChatHistory(true);
 		setTextAreaDisabled(true);
-		loadChatHistory(botOptions, chatHistory, setMessages, setIsLoadingChatHistory, setTextAreaDisabled);
+		loadChatHistory(botOptions, loader, setMessages, setIsLoadingChatHistory, setTextAreaDisabled,
+			createChatHistoryButton);
 	}
 
 	/**
@@ -483,6 +532,7 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 	 * @param event mouse event
 	 */
 	const handleToggleAudio = () => {
+		audioToggledOnRef.current = !audioToggledOn
 		setAudioToggledOn(prev => !prev);
 	}
 
@@ -506,12 +556,23 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 	 * @param sendUserInput boolean indicating if user input should be sent as a message into the chat window
 	 */
 	const handleActionInput = async (path: string, userInput: string, sendUserInput = true) => {
+		setIsLoadingChatHistory(false)
 		clearTimeout(timeoutId);
 		userInput = userInput.trim();
 		paramsInputRef.current = userInput;
 
 		if (userInput === "") {
 			return;
+		}
+
+		const messageHandler = botOptions.messages?.messageHandler;
+		if (messageHandler) {
+			messageHandler.sendMessage(userInput);
+			setIsBotTyping(true);
+		} else {
+			setTimeout(() => {
+				setIsBotTyping(true);
+			}, 400);
 		}
 
 		// Add user message to messages array
@@ -531,14 +592,15 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 		// used for voice
 		keepVoiceOnRef.current = voiceToggledOn;
 		syncVoiceWithChatInput(false, botOptions);
-		
-		setTimeout(() => {
-			setIsBotTyping(true);
-		}, 400);
+
 
 		setTimeout(async () => {
+			if (messageHandler) {
+				return
+			}
 			const params = {prevPath: getPrevPath(), userInput, injectMessage, streamMessage, openChat};
 			const hasNextPath = await postProcessBlock(flow, path, params, setPaths);
+			console.log('hasNextPath', hasNextPath)
 			if (!hasNextPath) {
 				updateTextArea();
 				syncVoiceWithChatInput(keepVoiceOnRef.current, botOptions);

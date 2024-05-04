@@ -1,4 +1,4 @@
-import { Options } from "../types/Options";
+import {Options} from "../types/Options";
 
 import logo from "../assets/logo.png";
 import actionDisabledIcon from "../assets/action_disabled_icon.png";
@@ -15,7 +15,7 @@ import audioIcon from "../assets/audio_icon.svg";
 import notificationSound from "../assets/notification_sound.wav";
 
 // default options provided to the bot
-const defaultOptions = {
+const defaultOptions: Options = {
 	// tracks state of chat window, also the default state to load it in
 	isOpen: false,
 
@@ -24,8 +24,8 @@ const defaultOptions = {
 		primaryColor: "#42b0c5",
 		secondaryColor: "#491d8d",
 		fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', " +
-			"'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', " +
-			"sans-serif",
+      "'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', " +
+      "sans-serif",
 		showHeader: true,
 		showFooter: true,
 		showInputRow: true,
@@ -102,6 +102,7 @@ const defaultOptions = {
 	},
 	voice: {
 		disabled: true,
+		mobileEnabled: false,
 		defaultToggledOn: false,
 		timeoutPeriod: 10000,
 		autoSendDisabled: false,
@@ -110,7 +111,7 @@ const defaultOptions = {
 	},
 	footer: {
 		text: (
-			<div style={{cursor: "pointer"}} 
+			<div style={{cursor: "pointer"}}
 				onClick={() => window.open("https://react-chatbotify.tjtanjin.com")}
 			>
 				<span>Powered By </span>
@@ -175,7 +176,7 @@ export const getDefaultBotOptions = () => {
 
 /**
  * Parses default options with user provided options to generate final bot options.
- * 
+ *
  * @param providedOptions options provided by the user to the bot
  */
 export const parseBotOptions = (providedOptions: Options | undefined) => {
@@ -193,16 +194,16 @@ export const parseBotOptions = (providedOptions: Options | undefined) => {
 
 /**
  * Combines default and provided options.
- * 
+ *
  * @param providedOptions options provided by the user to the bot
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const getCombinedOptions = (providedOptions: any): Options => {
 	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const mergedOptions: any = { ...defaultOptions };
+	const mergedOptions: any = {...defaultOptions};
 	for (const prop in providedOptions) {
 		if (typeof providedOptions[prop] === "object" && providedOptions[prop] !== null) {
-			mergedOptions[prop] = { ...mergedOptions[prop], ...providedOptions[prop] };
+			mergedOptions[prop] = {...mergedOptions[prop], ...providedOptions[prop]};
 		} else {
 			mergedOptions[prop] = providedOptions[prop];
 		}

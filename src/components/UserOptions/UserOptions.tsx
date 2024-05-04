@@ -1,8 +1,7 @@
+import {MouseEvent, useEffect, useState} from "react";
 
-import { useEffect, useState, MouseEvent } from "react";
-
-import { useBotOptions } from "../../context/BotOptionsContext";
-import { usePaths } from "../../context/PathsContext";
+import {useBotOptions} from "../../context/BotOptionsContext";
+import {usePaths} from "../../context/PathsContext";
 
 import "./UserOptions.css";
 
@@ -16,11 +15,13 @@ import "./UserOptions.css";
 const UserOptions= ({
 	options,
 	path,
-	handleActionInput
+	handleActionInput,
+	doNotDisable
 }: {
 	options: string[];
 	path: string;
 	handleActionInput: (path: string, userInput: string, sendUserInput: boolean) => Promise<void>;
+	doNotDisable?: boolean
 }) => {
 
 	// handles options for bot
@@ -55,6 +56,9 @@ const UserOptions= ({
 	// when moving on from current path, we also want to disable options
 	// cannot just rely on user input since path can change even without it (e.g. transition)
 	useEffect(() => {
+		if (doNotDisable) {
+			return;
+		}
 		if (paths.length > 0 && paths[paths.length - 1] !== path) {
 			setDisabled(true);
 		}

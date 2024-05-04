@@ -1,3 +1,5 @@
+import {Message} from "./Message";
+
 /**
  * Defines the configurable options/styles for the chat bot.
  */
@@ -5,6 +7,9 @@ export type Options = {
 	// tracks state of chat window, also the default state to load it in
 	isOpen?: boolean;
 
+	messages?: {
+		messageHandler?: MessageHandler
+	},
 	// configurations
 	theme?: {
 		primaryColor?: string;
@@ -53,6 +58,7 @@ export type Options = {
 		storageKey?: string;
 		viewChatHistoryButtonText?: string;
 		chatHistoryLineBreakText?: string;
+		historyLoader?: ChatHistoryLoader;
 	},
 	chatInput?: {
 		disabled?: boolean;
@@ -86,6 +92,7 @@ export type Options = {
 		autoSendDisabled?: boolean;
 		autoSendPeriod?: number;
 		icon?: string;
+		mobileEnabled?: boolean;
 	},
 	footer?: {
 		text?: string | JSX.Element;
@@ -183,4 +190,17 @@ export type Options = {
 	loadingSpinnerStyle?: {
 		[key: string]: string | number;
 	}
+}
+
+export type ChatHistoryLoader = {
+	loadHistory(): Promise<Message[]>
+	hasMoreHistory(): Promise<boolean>
+	historyWasLoadedOnce(): boolean
+	loadOnStart?: boolean
+}
+
+export type MessageHandler = {
+	sendMessage(message: string): void
+
+	onMessagesReceived(callback: (messages: Message[], options?: string[]) => void): void
 }
