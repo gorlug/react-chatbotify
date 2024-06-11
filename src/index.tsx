@@ -18,6 +18,7 @@ export {
 	BotOptionsContext,
 	MessagesContext,
 	PathsContext,
+	UserOptions
 };
 
 export type {
@@ -28,7 +29,6 @@ export type {
 	MessageHandler,
 	ChatHistoryLoader,
 	Params,
-	UserOptions
 };
 
 export default ChatBot;
