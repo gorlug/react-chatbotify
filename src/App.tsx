@@ -195,9 +195,12 @@ class MockMessageHandler implements MessageHandler {
 			console.log(path, userInput, sendUserInput);
 		}
 
-
 	setHandleActionInput(callback: (path: string, userInput: string, sendUserInput: boolean) => Promise<void>): void {
 		this.handleActionInput = callback;
+	}
+
+	getHandleActionInput(): (path: string, userInput: string, sendUserInput: boolean) => Promise<void> {
+		return this.handleActionInput
 	}
 	callback?: (messages: Message[], options?: string[]) => void
 	sendMessage(): void {

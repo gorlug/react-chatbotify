@@ -205,4 +205,5 @@ export type MessageHandler = {
 
 	onMessagesReceived(callback: (messages: Message[], options?: string[]) => void): void
 	setHandleActionInput(callback: (path: string, userInput: string, sendUserInput: boolean) => Promise<void>): void
+	getHandleActionInput(): (path: string, userInput: string, sendUserInput: boolean) => Promise<void>
 }
