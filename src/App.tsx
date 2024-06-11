@@ -190,6 +190,15 @@ class HistoryLoader implements ChatHistoryLoader {
 }
 
 class MockMessageHandler implements MessageHandler {
+	handleActionInput: (path: string, userInput: string, sendUserInput: boolean) => Promise<void> =
+		async (path: string, userInput: string, sendUserInput: boolean) => {
+			console.log(path, userInput, sendUserInput);
+		}
+
+
+	setHandleActionInput(callback: (path: string, userInput: string, sendUserInput: boolean) => Promise<void>): void {
+		this.handleActionInput = callback;
+	}
 	callback?: (messages: Message[], options?: string[]) => void
 	sendMessage(): void {
 		if (!this.callback) {
