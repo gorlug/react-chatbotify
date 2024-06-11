@@ -8,6 +8,7 @@ import {Flow} from "./types/Flow";
 import {Message} from "./types/Message";
 import {ChatHistoryLoader, MessageHandler, Options} from "./types/Options";
 import {Params} from "./types/Params";
+import UserOptions from "./components/UserOptions/UserOptions";
 
 /**
  * Exports for developer use.
@@ -26,7 +27,8 @@ export type {
 	Options,
 	MessageHandler,
 	ChatHistoryLoader,
-	Params
+	Params,
+	UserOptions
 };
 
 export default ChatBot;
