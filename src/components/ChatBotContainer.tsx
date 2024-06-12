@@ -614,7 +614,9 @@ const ChatBotContainer = ({ flow }: { flow: Flow }) => {
 		}, botOptions.chatInput?.botDelay as number + 100);
 	}
 
-	botOptions.messages?.messageHandler?.setHandleActionInput(handleActionInput);
+	useEffect(() => {
+		botOptions.messages?.messageHandler?.setHandleActionInput(handleActionInput);
+	}, [])
 
 	/**
 	 * Retrieves class name for window state.
